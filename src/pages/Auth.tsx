@@ -16,6 +16,8 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
+  // Loading state for OAuth login
+  const [oauthLoading, setOauthLoading] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -108,6 +110,30 @@ const Auth = () => {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    setOauthLoading(true);
+    try {
+      const redirectBase = import.meta.env.VITE_SITE_URL || window.location.origin;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${redirectBase}/`,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+    } catch (error: any) {
+      toast({
+        title: "Erro no login com Google",
+        description: error.message || 'Ocorreu um erro durante o login com o Google.',
+        variant: 'destructive',
+      });
+    } finally {
+      setOauthLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/20 p-4">
       <Card className="w-full max-w-md">
@@ -121,6 +147,26 @@ const Auth = () => {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Social login */}
+          <div className="space-y-4 mb-4">
+            <Button
+              onClick={handleGoogleLogin}
+              className="w-full"
+              disabled={oauthLoading}
+            >
+              {oauthLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Conectando...
+                </>
+              ) : (
+                'Continuar com Google'
+              )}
+            </Button>
+            <div className="relative text-center">
+              <span className="text-sm text-muted-foreground">ou</span>
+            </div>
+          </div>
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="login">Login</TabsTrigger>

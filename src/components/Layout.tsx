@@ -27,17 +27,14 @@ const Layout = ({ children }: LayoutProps) => {
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
+      (_event, session) => {
         setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (!session) {
-          navigate("/auth");
+        const newUser = session?.user ?? null;
+        setUser(newUser);
+        if (newUser) {
+          fetchProfile(newUser.id);
         } else {
-          // Fetch user profile
-          setTimeout(() => {
-            fetchProfile(session.user.id);
-          }, 0);
+          setProfile(null);
         }
       }
     );
@@ -45,17 +42,17 @@ const Layout = ({ children }: LayoutProps) => {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (!session) {
-        navigate("/auth");
+      const newUser = session?.user ?? null;
+      setUser(newUser);
+      if (newUser) {
+        fetchProfile(newUser.id);
       } else {
-        fetchProfile(session.user.id);
+        setProfile(null);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, []);
 
   const fetchProfile = async (userId: string) => {
     try {
@@ -95,7 +92,39 @@ const Layout = ({ children }: LayoutProps) => {
   };
 
   if (!user) {
-    return null; // Auth component will be shown
+    // When no user is logged in, show a simple header with login actions
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-card">
+          <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Brain className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-xl font-bold">Berger Singular</h1>
+                <p className="text-sm text-muted-foreground">IA Pessoal</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              {/* Login button triggers Google OAuth login */}
+              <Button
+                onClick={async () => {
+                  await supabase.auth.signInWithOAuth({ provider: 'google' });
+                }}
+              >
+                Entrar com Google
+              </Button>
+              {/* Or navigate to /auth for email login or signup */}
+              <Button variant="outline" onClick={() => navigate('/auth')}>
+                Login / Cadastro
+              </Button>
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 py-6">
+          {children}
+        </main>
+      </div>
+    );
   }
 
   const userInitials = profile?.nome 

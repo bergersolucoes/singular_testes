@@ -2,8 +2,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://nixermavemeelpzxzwer.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5peGVybWF2ZW1lZWxwenh6d2VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwODcyMjEsImV4cCI6MjA2OTY2MzIyMX0.g9yAGW5Wa9aYqZqFAPIkKN5UmA1S1EKDCxauBPb4Qvg";
+// Use environment variables for Supabase configuration.
+// Rely on public environment variables (prefixed with NEXT_PUBLIC_) defined by the hosting platform.
+// No fallback values are provided here—if these variables are not defined the client will fail to initialize.
+const SUPABASE_URL: string = import.meta.env.NEXT_PUBLIC_SUPABASE_URL as string;
+const SUPABASE_PUBLISHABLE_KEY: string = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";

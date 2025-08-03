@@ -30,10 +30,19 @@ const ConversationsList = ({
   onConversationsUpdate
 }: ConversationsListProps) => {
   const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
 
   useEffect(() => {
-    loadConversations();
+    // Determine if a user is logged in. Guests should not load conversations.
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      if (user) {
+        loadConversations();
+      } else {
+        setIsLoading(false);
+      }
+    });
   }, []);
 
   const loadConversations = async () => {
@@ -109,6 +118,32 @@ const ConversationsList = ({
             <MessageSquare className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">Carregando conversas...</p>
           </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // If there is no authenticated user, show a message encouraging login.
+  if (!user) {
+    return (
+      <Card className="h-[400px]">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2">
+            <MessageSquare className="h-5 w-5" />
+            Conversas
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 flex flex-col items-center justify-center text-center space-y-2">
+          <p className="text-sm text-muted-foreground">
+            Faça login para salvar e acessar suas conversas anteriores.
+          </p>
+          <Button
+            onClick={async () => {
+              await supabase.auth.signInWithOAuth({ provider: 'google' });
+            }}
+          >
+            Entrar com Google
+          </Button>
         </CardContent>
       </Card>
     );

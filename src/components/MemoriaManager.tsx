@@ -28,8 +28,18 @@ const MemoriaManager = () => {
   });
   const { toast } = useToast();
 
+  // Track current authenticated user
+  const [user, setUser] = useState<any>(null);
+
   useEffect(() => {
-    loadMemorias();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      setUser(user);
+      if (user) {
+        loadMemorias();
+      } else {
+        setIsLoading(false);
+      }
+    });
   }, []);
 
   const loadMemorias = async () => {
@@ -151,6 +161,33 @@ const MemoriaManager = () => {
       <div className="text-center py-8">
         <Brain className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
         <p className="text-muted-foreground">Carregando memória vetorial...</p>
+      </div>
+    );
+  }
+
+  // If no user is authenticated, encourage login before using memory feature
+  if (!user) {
+    return (
+      <div className="text-center py-8 space-y-4">
+        <Brain className="h-16 w-16 text-muted-foreground mx-auto" />
+        <p className="text-muted-foreground">
+          Faça login para adicionar e gerenciar sua memória vetorial.
+        </p>
+        <div className="flex justify-center gap-2">
+          <Button
+            onClick={async () => {
+              await supabase.auth.signInWithOAuth({ provider: 'google' });
+            }}
+          >
+            Entrar com Google
+          </Button>
+          <Button variant="outline" onClick={() => {
+            // Navigate to /auth for email/password login or signup
+            window.location.assign('/auth');
+          }}>
+            Login / Cadastro
+          </Button>
+        </div>
       </div>
     );
   }

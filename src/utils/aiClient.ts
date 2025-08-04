@@ -1,63 +1,50 @@
+// Funções utilitárias para comunicação com a IA via Edge Function do Supabase.
+// Esta implementação substitui a função de envio de mensagem original, usando
+// a nova interface exigida pelo usuário. A função envia apenas a pergunta do
+// usuário como um objeto dentro do array `messages` com as chaves `role` e
+// `content`. Parâmetros adicionais (userId, conversationId, conversationHistory)
+// são aceitos para compatibilidade com chamadas existentes, mas são ignorados.
 
-// Cliente para integração com OpenAI via Supabase Edge Function
-import { supabase } from '@/integrations/supabase/client';
+const SUPABASE_URL: string | undefined = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY: string | undefined = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const CHAT_PROXY_FUNCTION = 'chat-proxy';
-
-interface ChatRequest {
-  pergunta: string;
-  user_id: string;
-  conversation_id?: string;
-  conversation_history?: Array<{role: string; content: string}>;
-}
-
-interface ChatResponse {
-  resposta: string;
-  error?: string;
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  throw new Error('As variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY precisam estar definidas');
 }
 
 export const sendMessageToAI = async (
-  pergunta: string, 
-  userId: string, 
-  conversationId?: string,
-  conversationHistory?: Array<{role: string; content: string}>
+  pergunta: string,
+  _userId?: string,
+  _conversationId?: string,
+  _conversationHistory?: Array<{ role: string; content: string }>
 ): Promise<string> => {
-  try {
-    console.log('🚀 Enviando mensagem via Edge Function:', { pergunta, userId, function: CHAT_PROXY_FUNCTION });
-    
-    const payload: ChatRequest = {
-      pergunta,
-      user_id: userId,
-      conversation_id: conversationId,
-      conversation_history: conversationHistory || []
-    };
-
-    const { data, error } = await supabase.functions.invoke(CHAT_PROXY_FUNCTION, {
-      body: payload
-    });
-
-    console.log('📡 Resposta da Edge Function:', { data, error });
-
-    if (error) {
-      console.error('❌ Erro da Edge Function:', error);
-      throw new Error(`Edge Function error: ${error.message}`);
-    }
-
-    console.log('✅ Dados recebidos:', data);
-
-    if (data.error) {
-      console.error('❌ Erro retornado pela API:', data.error);
-      throw new Error(data.error);
-    }
-
-    const resposta = data.resposta || 'Desculpe, não consegui processar sua mensagem.';
-    console.log('💬 Resposta final:', resposta);
-    
-    return resposta;
-  } catch (error) {
-    console.error('💥 Erro ao comunicar com a IA:', error);
-    
-    // Fallback para resposta de erro mais amigável
-    return `Erro ao conectar com a IA: ${error instanceof Error ? error.message : 'Erro desconhecido'}. Por favor, tente novamente.`;
-  }
+  return sendMessage(pergunta);
 };
+
+// Implementação principal de envio de mensagem conforme requisitado.
+export async function sendMessage(pergunta: string): Promise<string> {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/chat-proxy`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        messages: [
+          { role: 'user', content: pergunta },
+        ],
+      }),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      console.error('Erro na Edge Function:', data);
+      throw new Error(data.error?.message || 'Erro na Edge Function');
+    }
+    const reply = data.choices?.[0]?.message?.content || 'Sem resposta.';
+    return reply;
+  } catch (err) {
+    console.error('Erro ao comunicar com a IA:', err);
+    throw err;
+  }
+}

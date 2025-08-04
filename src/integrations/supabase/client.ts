@@ -2,19 +2,11 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-// Use environment variables for Supabase configuration.
-// Rely on public environment variables (prefixed with NEXT_PUBLIC_) defined by the hosting platform.
-// No fallback values are provided here—if these variables are not defined the client will fail to initialize.
-const SUPABASE_URL: string = import.meta.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const SUPABASE_PUBLISHABLE_KEY: string = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+// Use environment variables for Supabase configuration. These must be provided
+// in the deployment environment (e.g. Vercel) without any fallbacks.
+// The bang operator (!) asserts that these variables are defined.
+const supabaseUrl: string = process.env.SUPABASE_URL!;
+const supabaseKey: string = process.env.SUPABASE_ANON_KEY!;
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
-
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  auth: {
-    storage: localStorage,
-    persistSession: true,
-    autoRefreshToken: true,
-  }
-});
+// Export a single Supabase client instance using the provided URL and key.
+export const supabase = createClient<Database>(supabaseUrl, supabaseKey);

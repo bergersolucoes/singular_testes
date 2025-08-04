@@ -36,9 +36,6 @@ const ChatInterface = ({ conversationId, onConversationUpdate }: ChatInterfacePr
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
-  // Generate a pseudo user ID for guest users. This ID is stable for the component lifecycle.
-  const [guestId] = useState(() => `guest-${Math.random().toString(36).slice(2)}`);
-
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -59,11 +56,6 @@ const ChatInterface = ({ conversationId, onConversationUpdate }: ChatInterfacePr
 
   const loadConversation = async (id: string) => {
     try {
-      // Only attempt to load a conversation from Supabase when authenticated.
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        return;
-      }
       const { data, error } = await supabase
         .from('conversas')
         .select('*')
@@ -162,8 +154,7 @@ const ChatInterface = ({ conversationId, onConversationUpdate }: ChatInterfacePr
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      // Determine which user ID to use for the AI call.
-      const userIdForAi = user ? user.id : guestId;
+      if (!user) throw new Error('User not authenticated');
 
       // Prepare conversation history for context
       const conversationHistory = messages.map(msg => ({
@@ -174,7 +165,7 @@ const ChatInterface = ({ conversationId, onConversationUpdate }: ChatInterfacePr
       // Enviar mensagem para a IA com contexto
       const aiResponse = await sendMessageToAI(
         userMessage.content, 
-        userIdForAi, 
+        user.id, 
         currentConversationId || undefined,
         conversationHistory
       );
@@ -189,10 +180,8 @@ const ChatInterface = ({ conversationId, onConversationUpdate }: ChatInterfacePr
       const finalMessages = [...newMessages, assistantMessage];
       setMessages(finalMessages);
 
-      // Save conversation only when the user is authenticated
-      if (user) {
-        await saveConversation(finalMessages, userMessage.content.slice(0, 50));
-      }
+      // Save conversation
+      await saveConversation(finalMessages, userMessage.content.slice(0, 50));
 
     } catch (error: any) {
       console.error('Error sending message:', error);

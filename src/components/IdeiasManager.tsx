@@ -31,18 +31,8 @@ const IdeiasManager = () => {
   });
   const { toast } = useToast();
 
-  // Track current authenticated user
-  const [user, setUser] = useState<any>(null);
-
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      setUser(user);
-      if (user) {
-        loadIdeias();
-      } else {
-        setIsLoading(false);
-      }
-    });
+    loadIdeias();
   }, []);
 
   const loadIdeias = async () => {
@@ -190,33 +180,6 @@ const IdeiasManager = () => {
       <div className="text-center py-8">
         <Lightbulb className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
         <p className="text-muted-foreground">Carregando suas ideias...</p>
-      </div>
-    );
-  }
-
-  // If no user is authenticated, encourage login before using ideas feature
-  if (!user) {
-    return (
-      <div className="text-center py-8 space-y-4">
-        <Lightbulb className="h-16 w-16 text-muted-foreground mx-auto" />
-        <p className="text-muted-foreground">
-          Faça login para criar e gerenciar suas ideias.
-        </p>
-        <div className="flex justify-center gap-2">
-          <Button
-            onClick={async () => {
-              await supabase.auth.signInWithOAuth({ provider: 'google' });
-            }}
-          >
-            Entrar com Google
-          </Button>
-          <Button variant="outline" onClick={() => {
-            // Navigate to /auth for email/password login or signup
-            window.location.assign('/auth');
-          }}>
-            Login / Cadastro
-          </Button>
-        </div>
       </div>
     );
   }

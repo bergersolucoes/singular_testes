@@ -40,8 +40,7 @@ export async function sendMessage(pergunta: string): Promise<string> {
     }
 
     // ✅ Corrigido: Pega corretamente a mensagem retornada pelo modelo
-    const reply =
-      data.choices?.[0]?.message?.content?.trim() || 'Sem resposta.';
+    const reply = data.message || 'Sem resposta.';
 
     return reply;
   } catch (err) {

@@ -1,16 +1,21 @@
+// Centraliza a criação do cliente Supabase utilizando variáveis de ambiente do Vite.
+// Em projetos Vite, variáveis de ambiente voltadas para o client‑side devem ter o prefixo VITE_.
+// Caso as variáveis não estejam definidas, uma exceção é lançada para alertar a falta de configuração.
 import { createClient } from '@supabase/supabase-js';
 
-// Leitura das variáveis de ambiente via Vite
+// Substitui o uso de variáveis de ambiente do Node por import.meta.env, conforme recomendado pelo Vite.
 const supabaseUrl: string | undefined = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey: string | undefined = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
-  throw new Error('As variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY precisam estar definidas');
+  throw new Error(
+    'Supabase environment variables VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY must be provided'
+  );
 }
 
-// Cliente com redirecionamento configurado
+// Cria o cliente Supabase com redirect configurado para login social
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
-    redirectTo: `${import.meta.env.VITE_SITE_URL}/auth/v1/callback`,
+    redirectTo: import.meta.env.VITE_SITE_URL + "/auth/v1/callback",
   },
 });

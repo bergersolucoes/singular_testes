@@ -2,16 +2,30 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 
-const SUPABASE_URL = "https://nixermavemeelpzxzwer.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5peGVybWF2ZW1lZWxwenh6d2VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQwODcyMjEsImV4cCI6MjA2OTY2MzIyMX0.g9yAGW5Wa9aYqZqFAPIkKN5UmA1S1EKDCxauBPb4Qvg";
+/*
+ * In the original project the Supabase URL and anonymous key were
+ * hard‑coded into this client. To support different environments and
+ * avoid accidentally committing secrets to the repository the values
+ * should come from environment variables instead.  The user asked to
+ * standardise on SUPABASE_URL and SUPABASE_ANON_KEY.  These variables
+ * must be defined at build time (for example in a .env file or the
+ * deployment environment).  Falling back to undefined will cause the
+ * client constructor to throw if they are missing.
+ */
+const SUPABASE_URL: string | undefined = process.env.SUPABASE_URL;
+const SUPABASE_ANON_KEY: string | undefined = process.env.SUPABASE_ANON_KEY;
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  // In development you can set these variables in a .env file.  At runtime
+  // the app will throw immediately if they are missing so the developer
+  // notices the misconfiguration.
+  throw new Error('Supabase environment variables SUPABASE_URL and SUPABASE_ANON_KEY must be provided');
+}
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
     storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
-  }
+  },
 });

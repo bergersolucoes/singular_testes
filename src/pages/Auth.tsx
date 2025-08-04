@@ -9,11 +9,19 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Brain } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
+/*
+ * The authentication page provides both e‑mail/password authentication and
+ * OAuth login via Google.  It also offers a guest option which simply
+ * navigates back to the application without creating a session.  When
+ * using Google OAuth the Supabase client is configured to redirect
+ * back to the root of the site after the user finishes the flow.
+ */
 const Auth = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [nome, setNome] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -21,42 +29,38 @@ const Auth = () => {
     // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        navigate("/");
+        navigate('/');
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
       if (session) {
-        navigate("/");
+        navigate('/');
       }
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
-
       if (error) {
         throw error;
       }
-
       toast({
-        title: "Login realizado com sucesso!",
-        description: "Bem-vindo de volta ao Berger Singular.",
+        title: 'Login realizado com sucesso!',
+        description: 'Bem-vindo de volta ao Berger Singular.',
       });
     } catch (error: any) {
       toast({
-        title: "Erro no login",
-        description: error.message || "Ocorreu um erro durante o login.",
-        variant: "destructive",
+        title: 'Erro no login',
+        description: error.message || 'Ocorreu um erro durante o login.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -66,46 +70,65 @@ const Auth = () => {
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      // Define a URL de redirecionamento após a verificação de email.
-      // Caso esteja em produção, configure VITE_SITE_URL no arquivo .env para o domínio
-      // público onde o app está hospedado. Em ambiente de desenvolvimento, utiliza
-      // window.location.origin como fallback.
       const redirectBase = import.meta.env.VITE_SITE_URL || window.location.origin;
       const redirectUrl = `${redirectBase}/`;
-
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
-          // Esta URL será usada no link de confirmação enviado por email. Deve
-          // apontar para o domínio público da aplicação para evitar redirecionar
-          // usuários para localhost.
           emailRedirectTo: redirectUrl,
           data: {
             full_name: nome,
           },
         },
       });
-
       if (error) {
         throw error;
       }
-
       toast({
-        title: "Conta criada com sucesso!",
-        description: "Verifique seu email para confirmar a conta.",
+        title: 'Conta criada com sucesso!',
+        description: 'Verifique seu email para confirmar a conta.',
       });
     } catch (error: any) {
       toast({
-        title: "Erro no cadastro",
-        description: error.message || "Ocorreu um erro durante o cadastro.",
-        variant: "destructive",
+        title: 'Erro no cadastro',
+        description: error.message || 'Ocorreu um erro durante o cadastro.',
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleLogin = async () => {
+    setLoadingGoogle(true);
+    try {
+      const redirectBase = import.meta.env.VITE_SITE_URL || window.location.origin;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${redirectBase}/`,
+        },
+      });
+      if (error) {
+        throw error;
+      }
+      // Supabase will handle redirection; no further action needed here
+    } catch (error: any) {
+      toast({
+        title: 'Erro no login com Google',
+        description: error.message || 'Ocorreu um erro durante o login com Google.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingGoogle(false);
+    }
+  };
+
+  const handleGuest = () => {
+    // Navigates back to the home page without creating a session
+    navigate('/');
   };
 
   return (
@@ -126,7 +149,6 @@ const Auth = () => {
               <TabsTrigger value="login">Login</TabsTrigger>
               <TabsTrigger value="signup">Cadastro</TabsTrigger>
             </TabsList>
-            
             <TabsContent value="login" className="space-y-4">
               <form onSubmit={handleLogin} className="space-y-4">
                 <div className="space-y-2">
@@ -158,12 +180,11 @@ const Auth = () => {
                       Entrando...
                     </>
                   ) : (
-                    "Entrar"
+                    'Entrar'
                   )}
                 </Button>
               </form>
             </TabsContent>
-            
             <TabsContent value="signup" className="space-y-4">
               <form onSubmit={handleSignup} className="space-y-4">
                 <div className="space-y-2">
@@ -207,12 +228,38 @@ const Auth = () => {
                       Criando conta...
                     </>
                   ) : (
-                    "Criar conta"
+                    'Criar conta'
                   )}
                 </Button>
               </form>
             </TabsContent>
           </Tabs>
+          {/* OAuth and guest options */}
+          <div className="space-y-2 mt-4">
+            <Button
+              type="button"
+              className="w-full"
+              onClick={handleGoogleLogin}
+              disabled={loadingGoogle}
+            >
+              {loadingGoogle ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Entrando com Google...
+                </>
+              ) : (
+                'Entrar com Google'
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full"
+              onClick={handleGuest}
+            >
+              Entrar como convidado
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

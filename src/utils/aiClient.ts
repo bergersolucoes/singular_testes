@@ -36,15 +36,23 @@ export async function sendMessage(pergunta: string): Promise<string> {
         ],
       }),
     });
+
     const data = await response.json();
+
+    // Trata a resposta mesmo em caso de erro
     if (!response.ok) {
-      console.error('Erro na Edge Function:', data);
-      throw new Error(data.error?.message || 'Erro na Edge Function');
+      console.error('Erro na Edge Function:', data.error || data);
     }
-    const reply = data.choices?.[0]?.message?.content || 'Sem resposta.';
+
+    // Se veio erro, tenta usar a mensagem do erro; senão, pega a resposta da IA
+    const reply =
+      data?.choices?.[0]?.message?.content ||
+      data?.error?.message ||
+      'Sem resposta.';
+
     return reply;
   } catch (err) {
     console.error('Erro ao comunicar com a IA:', err);
-    throw err;
+    return 'Erro ao comunicar com a IA.';
   }
 }
